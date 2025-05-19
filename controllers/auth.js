@@ -1,0 +1,78 @@
+const User = require('../models/model.js')
+const bcrypt=require("bcryptjs")
+const jwt = require('jsonwebtoken');
+
+
+//REGİSTER FONKSİYONU
+exports.register=async(req,res)=>{
+    
+    const{username,email,password}=req.body
+
+
+
+try{
+    const existingUser=await User.findOne({email})          //mail kontrol
+    if(existingUser){
+        return res.status(400).json({message:"Bu e-posta zaten kayıtlı"})
+    }
+    const hashedPassword=await bcrypt.hash(password,10) //parola hash
+
+    const newUser=new User({             //haslı kullanıcı oluşturma
+        username,
+        email,
+        password:hashedPassword
+    })
+
+    await newUser.save()
+
+    res.status(201).json({message:"Kayıt Başarılı"})
+    }catch(err){
+        res.status(500).json({error:err.message})
+    }
+    
+}
+
+//LOGİN FONSKİYONU
+exports.login=async(req,res)=>{
+    const{email,password}=req.body
+
+    try{
+        const user=await User.findOne({email})  
+        if(!user){                                                              //mail kontrol
+            return res.status(400).json({message:"Kullanıcı bulunamadı"})
+        }
+
+        const isMatch=await bcrypt.compare(password,user.password)              //şifre kontrol
+        if(!isMatch){
+            return res.status(400).json({message:"Şifre Yanlış"})
+        }
+
+        const token=jwt.sign(
+            {id:user._id},
+            process.env.SECRET_TOKEN,
+            {expiresIn:"1h"}
+        
+        )
+
+        res.status(200).json({token})
+    
+    }catch(err){
+        res.status(500).json({error:err.message})
+    }
+
+}
+
+//GİRİŞ YAPAN KULLANICININ KENDİ BİLGİLERİNİ GETİR
+
+exports.getMe=async(req,res)=>{
+    try{
+        const user=await User.findById(req.user.id).select("-password")
+        if(!user){
+            return res.status(404).json({message:"Kullanıcı Bulunamadı"})
+        }
+
+        res.status(200).json(user)
+    } catch(err){
+        res.status(500).json({error:err.message})
+    }
+}
