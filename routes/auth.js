@@ -12,5 +12,7 @@ router.post("/login", authController.login);
 // Giriş yapan kullanıcı bilgisi (sadece token varsa çalışır)
 router.get("/me", verifyToken, authController.getMe);
 
+// Çıkış yapma 
+router.post("/logout",verifyToken,authController.logout)
 
 module.exports=router

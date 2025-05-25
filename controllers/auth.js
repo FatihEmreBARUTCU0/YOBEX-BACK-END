@@ -1,6 +1,8 @@
 const User = require('../models/model.js')
 const bcrypt=require("bcryptjs")
 const jwt = require('jsonwebtoken');
+const { addToBlacklist } = require("../blacklist");
+
 
 
 //REGİSTER FONKSİYONU
@@ -76,3 +78,13 @@ exports.getMe=async(req,res)=>{
         res.status(500).json({error:err.message})
     }
 }
+
+
+exports.logout = (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+        addToBlacklist(token);
+    }
+
+    return res.status(200).json({ message: "Çıkış başarılı. Token geçersiz kılındı." });
+};
